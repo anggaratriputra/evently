@@ -21,7 +21,7 @@ export async function POST(req: Request) {
 
   // If there are no headers, error out
   if (!svix_id || !svix_timestamp || !svix_signature) {
-    return new Response("Error occured -- no svix headers", {
+    return new Response("Error occurred -- no svix headers", {
       status: 400,
     });
   }
@@ -35,6 +35,9 @@ export async function POST(req: Request) {
 
   let evt: WebhookEvent;
 
+  // Extract data and event type
+  const { data, type: eventType } = payload;
+
   // Verify the payload with the headers
   try {
     evt = wh.verify(body, {
@@ -44,17 +47,16 @@ export async function POST(req: Request) {
     }) as WebhookEvent;
   } catch (err) {
     console.error("Error verifying webhook:", err);
-    return new Response("Error occured", {
+    return new Response("Error occurred", {
       status: 400,
     });
   }
 
   // Get the ID and type
-  const { id } = evt.data;
-  const eventType = evt.type;
+  const { id } = data;
 
   if (eventType === "user.created") {
-    const { id, email_addresses, image_url, first_name, last_name, username } = evt.data;
+    const { id, email_addresses, image_url, first_name, last_name, username } = data;
 
     const user = {
       clerkId: id,
@@ -79,27 +81,27 @@ export async function POST(req: Request) {
   }
 
   if (eventType === 'user.updated') {
-    const {id, image_url, first_name, last_name, username } = evt.data
+    const {id, image_url, first_name, last_name, username } = data;
 
     const user = {
       firstName: first_name,
       lastName: last_name,
       username: username!,
       photo: image_url,
-    }
+    };
 
-    const updatedUser = await updateUser(id, user)
+    const updatedUser = await updateUser(id, user);
 
-    return NextResponse.json({ message: 'OK', user: updatedUser })
+    return NextResponse.json({ message: 'OK', user: updatedUser });
   }
 
   if (eventType === 'user.deleted') {
-    const { id } = evt.data
+    const { id } = data;
 
-    const deletedUser = await deleteUser(id!)
+    const deletedUser = await deleteUser(id!);
 
-    return NextResponse.json({ message: 'OK', user: deletedUser })
+    return NextResponse.json({ message: 'OK', user: deletedUser });
   }
- 
-    return new Response("", { status: 200 });
+
+  return new Response("", { status: 200 });
 }
